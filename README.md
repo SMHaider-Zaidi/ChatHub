@@ -42,6 +42,8 @@ ChatHub/
 ├── .gitignore
 └── package.json
 ```
+---
+
 ### ⚙️ Setup
 Clone the repository<br>
 ```
@@ -60,3 +62,11 @@ node index.js
 ```
 
 Open 👉 http://localhost:3000
+
+---
+
+### Future Improvements
+📧 Email verification<br>
+💬 Private messaging<br>
+⌨️ Typing indicators<br>
+☁️ Deployment
