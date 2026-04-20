@@ -39,7 +39,6 @@ ChatHub/
 │   ├── login.ejs
 │   └── register.ejs
 ├── index.js
-├── .env
 ├── .gitignore
 └── package.json
 ```
