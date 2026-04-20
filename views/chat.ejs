@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChatHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="h-screen flex bg-gray-100">
+
+    <div class="w-1/4 bg-white border-r flex flex-col">
+        <div class="p-4 border-b font-bold">
+            Online Users
+        </div>
+        <ul id="users" class="flex-1 overflow-y-auto p-3 space-y-2">
+            </ul>
+    </div>
+
+    <div class="flex-1 flex flex-col">
+
+        <div class="flex justify-between items-center w-full bg-white border-b">
+            <div class="p-4">
+                Welcome, <span class="font-semibold text-blue-500"><%= username %></span>
+            </div>
+            <button id='leave-chat' type="button" class="bg-red-400 px-3 py-2 mr-4 rounded hover:bg-red-500 text-white">
+                Leave Chat
+            </button>
+        </div>
+
+        <div id="messages" class="flex-1 flex flex-col overflow-y-auto p-4 space-y-3">
+            
+            <% if (messages && messages.length > 0) { %>
+                <% messages.forEach(function(msg) { %>
+                    <div class="flex <%= msg.username === username ? 'justify-end' : '' %>">
+                        <div class="<%= msg.username === username ? 'bg-blue-500 text-white' : 'bg-white' %> p-3 rounded shadow max-w-xs break-words">
+                            <p class="text-sm font-semibold"><%= msg.username %></p>
+                            <p><%= msg.message %></p>
+                            <span class="text-xs <%= msg.username === username ? 'text-blue-100' : 'text-gray-400' %>">
+                                <%= new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %>
+                            </span>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } %>
+
+            </div>
+
+        <form id="form" class="bg-white p-4 flex gap-2 border-t">
+            <input 
+                id="messageInput"
+                type="text"
+                placeholder="Type a message..."
+                autocomplete="off"
+                class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <button 
+                type="submit"
+                class="bg-blue-500 text-white px-5 py-2 rounded hover:bg-blue-600">
+                Send
+            </button>
+        </form>
+
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const username = "<%= username %>";
+
+        const form = document.getElementById('form');
+        const input = document.getElementById('messageInput');
+        const messagesContainer = document.getElementById('messages');
+        const usersList = document.getElementById('users');
+        const leaveBtn = document.getElementById('leave-chat');
+
+        // Scroll to the bottom immediately when page loads
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Tell server we joined
+        socket.emit('join', username);
+
+        // Handle sending messages
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (input.value.trim() !== '') {
+                socket.emit('chat message', input.value);   
+                input.value = '';
+            }
+        });
+
+        // Handle receiving messages (Real-time)
+        socket.on('chat message', function(data) {
+            const div = document.createElement('div');
+            div.classList.add('flex');
+
+            if (data.username === 'System') {
+                div.classList.add('justify-center');
+                div.innerHTML = `
+                    <div class="bg-gray-300 text-gray-700 italic p-2 rounded text-sm max-w-xs break-words">
+                        ${data.message} <span class="text-xs text-gray-500 ml-1">${data.time}</span>
+                    </div>
+                `;
+            } else {
+                if (data.username === username) {
+                    div.classList.add('justify-end');
+                }
+                div.innerHTML = `
+                    <div class="${data.username === username ? 'bg-blue-500 text-white' : 'bg-white'} p-3 rounded shadow max-w-xs break-words">
+                        <p class="text-sm font-semibold">${data.username}</p>
+                        <p>${data.message}</p>
+                        <span class="text-xs ${data.username === username ? 'text-blue-100' : 'text-gray-400'}">${data.time}</span>
+                    </div>
+                `;
+            }
+
+            messagesContainer.appendChild(div);
+            // Scroll to bottom when a new message arrives
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+
+        // Handle leaving the chat
+        leaveBtn.addEventListener('click', function() {
+            socket.disconnect();
+            window.location.href = '/';
+        });
+
+        // Update online users sidebar
+        socket.on('users list', function(users) {
+            usersList.innerHTML = '';
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.textContent = user;
+                li.className = "bg-gray-200 p-2 rounded list-none";
+                usersList.appendChild(li);
+            });
+        });
+    </script>
+
+</body>
+</html>
